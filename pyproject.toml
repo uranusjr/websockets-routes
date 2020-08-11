@@ -3,7 +3,7 @@ requires = ["flit_core >=2,<3"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
-module = "websockets_routes"
+dist-name = "websockets-routes"
 author = "Tzu-ping Chung"
 author-email = "uranusjr@gmail.com"
 home-page = "https://github.com/uranusjr/websockets-routes/"
@@ -16,6 +16,8 @@ classifiers=[
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
 ]
+
+module = "websockets_routes"
 
 requires-python = ">=3.6"
 requires = [
