@@ -8,13 +8,22 @@ author = "Tzu-ping Chung"
 author-email = "uranusjr@gmail.com"
 home-page = "https://github.com/uranusjr/websockets-routes/"
 license = "ISC"
+description-file="README.md"
+classifiers=[
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: ISC License (ISCL)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
 
+requires-python = ">=3.6"
 requires = [
     "routes",
     "websockets",
 ]
 
-[tool.flit.metadata.requires-extras]
+[tool.flit.metadata.requires-extra]
 test = [
     "pytest",
     "pytest-asyncio",
