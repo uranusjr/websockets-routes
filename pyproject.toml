@@ -1,0 +1,21 @@
+[build-system]
+requires = ["flit_core >=2,<3"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "websockets_routes"
+author = "Tzu-ping Chung"
+author-email = "uranusjr@gmail.com"
+home-page = "https://github.com/uranusjr/websockets-routes/"
+license = "ISC"
+
+requires = [
+    "routes",
+    "websockets",
+]
+
+[tool.flit.metadata.requires-extras]
+test = [
+    "pytest",
+    "pytest-asyncio",
+]
