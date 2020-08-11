@@ -28,19 +28,8 @@ def start_server():
     return manager
 
 
-@pytest.fixture(scope="session")
-def start_server_connection(start_server):
-    @contextlib.asynccontextmanager
-    async def manager(handler, **kwargs):
-        async with start_server(handler, **kwargs) as server:
-            async with websockets.connect(server.url) as ws:
-                yield server, ws
-
-    return manager
-
-
 @pytest.mark.asyncio
-async def test_routing(start_server):
+async def test_route(start_server):
     router = websockets_routes.Router()
 
     @router.route("/a")
@@ -59,3 +48,62 @@ async def test_routing(start_server):
         async with websockets.connect(f"{server.url}/b") as ws:
             received = await ws.recv()
             assert received == "route b"
+
+
+@pytest.mark.asyncio
+async def test_route_not_found(start_server):
+    router = websockets_routes.Router()
+
+    @router.route("/")
+    async def route_a(ws, path):
+        pass
+
+    async with start_server(router.handle) as server:
+        async with websockets.connect(f"{server.url}/not-found") as ws:
+            with pytest.raises(websockets.ConnectionClosedError) as ctx:
+                await ws.recv()
+            assert ctx.value.code == 4040
+
+
+@pytest.mark.asyncio
+async def test_handshake_not_found(start_server):
+    router = websockets_routes.Router()
+
+    @router.route("/")
+    async def route_a(ws, path):
+        pass
+
+    async with start_server(
+        router.handle, process_request=router.process_request,
+    ) as server:
+        with pytest.raises(websockets.InvalidStatusCode) as ctx:
+            async with websockets.connect(f"{server.url}/not-found"):
+                pass
+        assert ctx.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_view_process_request(start_server):
+    router = websockets_routes.Router()
+
+    @router.route("/test/{id}")
+    class Endpoint:
+        async def process_request(self, path, headers):
+            if path.params["id"] != "error-out":
+                return None
+            return (406, [], b"rejected by view\n")
+
+        async def handle(self, ws, path):
+            await ws.send(path.params["id"])
+
+    async with start_server(
+        router.handle, process_request=router.process_request,
+    ) as server:
+        with pytest.raises(websockets.InvalidStatusCode) as ctx:
+            async with websockets.connect(f"{server.url}/test/error-out"):
+                pass
+        assert ctx.value.status_code == 406
+
+        async with websockets.connect(f"{server.url}/test/this-works") as ws:
+            received = await ws.recv()
+            assert received == "this-works"
