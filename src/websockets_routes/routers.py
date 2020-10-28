@@ -85,6 +85,8 @@ class Router:
         if path.params is None:
             await ws.close(4040)
         handle = getattr(path.route, "handle", None)
+        if handle is None:
+            return
         await handle(ws, path)
 
     def route(self, path: str, *, name: typing.Optional[str] = None):
