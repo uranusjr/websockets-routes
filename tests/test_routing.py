@@ -40,7 +40,7 @@ async def test_route(start_server):
     async def route_b(ws, path):
         await ws.send("route b")
 
-    async with start_server(router.handle) as server:
+    async with start_server(router) as server:
         async with websockets.connect(f"{server.url}/a") as ws:
             received = await ws.recv()
             assert received == "route a"
@@ -58,7 +58,7 @@ async def test_route_not_found(start_server):
     async def route_a(ws, path):
         pass
 
-    async with start_server(router.handle) as server:
+    async with start_server(router) as server:
         async with websockets.connect(f"{server.url}/not-found") as ws:
             with pytest.raises(websockets.ConnectionClosedError) as ctx:
                 await ws.recv()
@@ -74,7 +74,7 @@ async def test_handshake_not_found(start_server):
         pass
 
     async with start_server(
-        router.handle, process_request=router.process_request,
+        router, create_protocol=websockets_routes.Protocol,
     ) as server:
         with pytest.raises(websockets.InvalidStatusCode) as ctx:
             async with websockets.connect(f"{server.url}/not-found"):
@@ -97,7 +97,7 @@ async def test_view_process_request(start_server):
             await ws.send(path.params["id"])
 
     async with start_server(
-        router.handle, process_request=router.process_request,
+        router, create_protocol=websockets_routes.Protocol,
     ) as server:
         with pytest.raises(websockets.InvalidStatusCode) as ctx:
             async with websockets.connect(f"{server.url}/test/error-out"):

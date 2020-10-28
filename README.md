@@ -33,18 +33,31 @@ By default, connections are closed immediately with 4040 if the URL does not mat
 
 ### Block connections during handshake
 
-Also supply the `process_request()` hook to make the server return an HTTP 404 during the handshake phase instead:
+The router has its own `serve()` method that overrides the `process_request()`
+hook, making the server return an HTTP 404 during the handshake phase instead:
 
 ```python
+start_server = router.serve(...)
+```
+
+This way, a non-matching client never connects to the websocket handler at all.
+
+The override is implemented via a custom [WebSocket protocol], so you can
+subclass that if you need further customisation:
+
+```python
+class MyProtocol(websockets_routes.Protocol):
+    ...
+
 start_server = websockets.serve(
-    router.handle,
+    router,
     ...,
-    process_request=router.process_request,
+    create_protocol=MyProtocol,
     ...,
 )
 ```
 
-This way, a non-matching client never connects to the websocket handler at all.
+[WebSocket protocol]: https://websockets.readthedocs.io/en/stable/cheatsheet.html?highlight=protocol#server
 
 
 ### Access route parameters
@@ -62,7 +75,7 @@ async def thing_detail(ws, path):
 
 ### Per-view handshake hooks
 
-Decorate a class to provide per-view validation:
+Decorate a class to provide per-view validation and additional processing:
 
 ```python
 import http
@@ -71,12 +84,16 @@ import http
 class ThingDetail:
     async def process_request(self, path, headers):
         thing_id = path.params["id"]
-        if thing_exists(thing_id):
+        thing = get_thing_or_none(thing_id)
+        if thing is not None:
+            # Pass additional context to handle().
+            path.context["thing"] = thing
             return None
         message = f"thing {thing_id!r} not found\n"
         return (http.HTTPStatus.NOT_FOUND, [], message.encode("utf-8"))
 
     async def handle(self, ws, path):
-        """Now this is only called if thing_exists(thing_id) returns True.
+        """Now this is only called if thing is found.
         """
+        thing = path.context["thing"]  # Retrieve the context to use.
 ```
